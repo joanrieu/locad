@@ -11,6 +11,7 @@ locad = observable({
   history: [],
 
   concepts: {},
+  fields: {},
   entries: {},
 
   apply(event) {
@@ -20,6 +21,7 @@ locad = observable({
         const concept = {
           id: event.id,
           name: "",
+          field_ids: [],
           entry_ids: []
         };
         this.concepts[concept.id] = concept;
@@ -29,6 +31,16 @@ locad = observable({
       case "CONCEPT_RENAMED": {
         const concept = this.concepts[event.id];
         concept.name = event.name;
+        break;
+      }
+
+      case "FIELD_CREATED": {
+        const field = {
+          id: event.id,
+          name: ""
+        };
+        locad.fields[field.id] = field;
+        locad.concepts[event.concept_id].field_ids.push(field.id);
         break;
       }
 
@@ -66,6 +78,15 @@ locad = observable({
     });
   },
 
+  create_field(id, concept_id) {
+    if (id in this.fields) throw new Error("field id already exists");
+    this.apply({
+      type: "FIELD_CREATED",
+      id,
+      concept_id
+    });
+  },
+
   create_entry(id, concept_id) {
     if (id in this.entries) throw new Error("entry id already exists");
     if (!(concept_id in this.concepts)) throw new Error("unknown concept id");
@@ -89,6 +110,10 @@ function new_uuid() {
 
 function new_concept_id() {
   return "concept:" + new_uuid();
+}
+
+function new_field_id() {
+  return "field:" + new_uuid();
 }
 
 function new_entry_id() {
@@ -134,15 +159,11 @@ const Concept = observer(({ id }) => {
   if (!concept) throw new Error("concept not found");
   function saveName(event) {
     const name = event.target.value;
-    if (name !== locad.concepts[id].name) locad.rename_concept(id, name);
+    if (name !== concept.name) locad.rename_concept(id, name);
   }
   function blurOnEnter(event) {
     if (event.key === "Enter") event.target.blur();
   }
-  const entries = concept.entry_ids.map(id => locad.entries[id]);
-  const specimen = {};
-  for (const entry of entries) Object.assign(specimen, entry.fields);
-  const columns = Object.keys(specimen);
   return html`
     <div>
       <h1>
@@ -154,35 +175,9 @@ const Concept = observer(({ id }) => {
           value=${concept.name}
         />
       </h1>
-      <hr />
       ${concept.entry_ids.length > 0 &&
         html`
-          <table>
-            <thead>
-              <tr>
-                <th>Row</th>
-                ${columns.map(
-                  column =>
-                    html`
-                      <th>${column}</th>
-                    `
-                )}
-                <th><button className="add small">New field</button></th>
-              </tr>
-            </thead>
-            <tbody>
-              ${concept.entry_ids.map(
-                (entry, row) =>
-                  html`
-                    <tr>
-                      <td>
-                        ${row + 1}
-                      </td>
-                    </tr>
-                  `
-              )}
-            </tbody>
-          </table>
+          <${Entries} concept_id=${concept.id} />
         `}
       <button
         class="add small"
@@ -194,6 +189,47 @@ const Concept = observer(({ id }) => {
         New entry
       </button>
     </div>
+  `;
+});
+
+const Entries = observer(({ concept_id }) => {
+  const concept = locad.concepts[concept_id];
+  if (!concept) throw new Error("concept not found");
+  const entries = concept.entry_ids.map(id => locad.entries[concept.id]);
+  const fields = concept.field_ids.map(id => locad.fields[concept.id]);
+  return html`
+    <table>
+      <thead>
+        <tr>
+          <th>Row</th>
+          ${fields.map(
+            field =>
+              html`
+                <th>${field}</th>
+              `
+          )}
+          <th><button className="add small">New field</button></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${entries.map(
+          (entry, row) =>
+            html`
+              <tr>
+                <td>
+                  ${row + 1}
+                </td>
+                ${fields.map(
+                  field =>
+                    html`
+                      <td>${entry.fields[field]}</td>
+                    `
+                )}
+              </tr>
+            `
+        )}
+      </tbody>
+    </table>
   `;
 });
 
