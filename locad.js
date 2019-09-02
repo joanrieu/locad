@@ -175,9 +175,76 @@ const Concept = observer(({ id }) => {
           value=${concept.name}
         />
       </h1>
+      <${Fields} concept_id=${concept.id} />
+      <${Entries} concept_id=${concept.id} />
+    </div>
+  `;
+});
+
+const Fields = observer(({ concept_id }) => {
+  const concept = locad.concepts[concept_id];
+  if (!concept) throw new Error("concept not found");
+  const fields = concept.field_ids.map(id => locad.fields[concept.id]);
+  return html`
+    <div>
+      <h2>Fields</h2>
+      ${fields.length > 0 &&
+        html`
+          <ul>
+            ${fields.map(
+              field =>
+                html`
+                  <li>${field.name}</li>
+                `
+            )}
+          </ul>
+        `}
+      <button className="add small">New field</button>
+    </div>
+  `;
+});
+
+const Entries = observer(({ concept_id }) => {
+  const concept = locad.concepts[concept_id];
+  if (!concept) throw new Error("concept not found");
+  const entries = concept.entry_ids.map(id => locad.entries[concept.id]);
+  const fields = concept.field_ids.map(id => locad.fields[concept.id]);
+  return html`
+    <div>
+      <h2>Entries</h2>
       ${concept.entry_ids.length > 0 &&
         html`
-          <${Entries} concept_id=${concept.id} />
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                ${fields.map(
+                  field =>
+                    html`
+                      <th>${field}</th>
+                    `
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              ${entries.map(
+                (entry, row) =>
+                  html`
+                    <tr>
+                      <td>
+                        ${row + 1}
+                      </td>
+                      ${fields.map(
+                        field =>
+                          html`
+                            <td>${entry.fields[field]}</td>
+                          `
+                      )}
+                    </tr>
+                  `
+              )}
+            </tbody>
+          </table>
         `}
       <button
         class="add small"
@@ -189,47 +256,6 @@ const Concept = observer(({ id }) => {
         New entry
       </button>
     </div>
-  `;
-});
-
-const Entries = observer(({ concept_id }) => {
-  const concept = locad.concepts[concept_id];
-  if (!concept) throw new Error("concept not found");
-  const entries = concept.entry_ids.map(id => locad.entries[concept.id]);
-  const fields = concept.field_ids.map(id => locad.fields[concept.id]);
-  return html`
-    <table>
-      <thead>
-        <tr>
-          <th>Row</th>
-          ${fields.map(
-            field =>
-              html`
-                <th>${field}</th>
-              `
-          )}
-          <th><button className="add small">New field</button></th>
-        </tr>
-      </thead>
-      <tbody>
-        ${entries.map(
-          (entry, row) =>
-            html`
-              <tr>
-                <td>
-                  ${row + 1}
-                </td>
-                ${fields.map(
-                  field =>
-                    html`
-                      <td>${entry.fields[field]}</td>
-                    `
-                )}
-              </tr>
-            `
-        )}
-      </tbody>
-    </table>
   `;
 });
 

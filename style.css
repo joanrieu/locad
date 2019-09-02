@@ -12,7 +12,11 @@ body {
 
 h1 small {
   font-style: italic;
-  font-size: 0.5em;
+  font-size: 1rem;
+}
+
+h2 {
+  font-size: 1rem;
 }
 
 div.grid {
@@ -64,4 +68,5 @@ tbody {
 
 td {
   padding: 0.5em 1em;
+  text-align: center;
 }
