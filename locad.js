@@ -10,10 +10,10 @@ const html = htm.bind(h);
 locad = observable({
   history: [],
 
-  concepts: [],
-  concepts_by_id: {},
+  concepts: {},
 
   apply(event) {
+    if (!event.date) event.date = get_date();
     switch (event.type) {
       case "CONCEPT_ADDED": {
         const concept = {
@@ -22,19 +22,34 @@ locad = observable({
           created_at: new Date(event.date),
           updated_at: new Date(event.date)
         };
-        this.concepts.push(concept);
-        this.concepts_by_id[concept.id] = concept;
+        this.concepts[concept.id] = concept;
+        break;
       }
+      case "CONCEPT_RENAMED": {
+        const concept = this.concepts[event.id];
+        concept.name = event.name;
+        break;
+      }
+      default:
+        throw new Error("unknown event type");
     }
     this.history.push(event);
   },
 
   add_concept(id) {
-    if (id in this.concepts_by_id) throw new Error("concept id already exists");
+    if (id in this.concepts) throw new Error("concept id already exists");
     this.apply({
       type: "CONCEPT_ADDED",
+      id
+    });
+  },
+
+  rename_concept(id, name) {
+    if (!(id in this.concepts)) throw new Error("unknown concept id");
+    this.apply({
+      type: "CONCEPT_RENAMED",
       id,
-      date: get_date()
+      name
     });
   }
 });
@@ -62,7 +77,7 @@ const Concepts = observer(
     <div>
       <h1>Concepts</h1>
       <div class="grid">
-        ${locad.concepts.map(
+        ${Object.values(locad.concepts).map(
           concept =>
             html`
               <a href="#/concepts/${concept.id}"
@@ -87,17 +102,28 @@ const Concepts = observer(
   `
 );
 
-const Concept = observer(
-  ({ id }) =>
-    html`
-      <div>
-        <h1>
-          <small>Concept</small> ${locad.concepts_by_id[id].name ||
-            "New concept"}
-        </h1>
-      </div>
-    `
-);
+const Concept = observer(({ id }) => {
+  function saveName(event) {
+    const name = event.target.value;
+    if (name !== locad.concepts[id].name) locad.rename_concept(id, name);
+  }
+  function blurOnEnter(event) {
+    if (event.key === "Enter") event.target.blur();
+  }
+  return html`
+    <div>
+      <h1>
+        <small>Concept</small>
+        <input
+          onblur=${saveName}
+          onkeydown=${blurOnEnter}
+          placeholder=${"New concept"}
+          value=${locad.concepts[id].name}
+        />
+      </h1>
+    </div>
+  `;
+});
 
 const App = observer(() => {
   const path = router.route.split("/");

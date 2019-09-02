@@ -10,7 +10,6 @@ body {
 }
 
 h1 small {
-  display: block;
   font-style: italic;
   font-size: 0.5em;
 }
@@ -28,11 +27,21 @@ button {
   border: 1px solid #ddd;
 }
 
-.add {
+button.add {
   border-radius: 1rem;
 }
 
-.add::before {
+button.add::before {
   content: "➕";
   padding-right: 0.5em;
+}
+
+input {
+  display: block;
+  font: inherit;
+}
+
+input:not(:focus) {
+  background: transparent;
+  border: none;
 }
