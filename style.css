@@ -5,8 +5,9 @@ body {
   background: #eee;
   color: #333;
   font-family: "Open Sans", sans-serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 300;
+  line-height: 1.2;
 }
 
 h1 small {
@@ -39,9 +40,28 @@ button.add::before {
 input {
   display: block;
   font: inherit;
+  height: 1.5em;
 }
 
 input:not(:focus) {
   background: transparent;
   border: none;
+}
+
+.small {
+  font-size: 0.7em;
+}
+
+table {
+  width: 100%;
+}
+
+tbody {
+  border-bottom: 1px solid #ddd;
+  background: white;
+  border: 1px solid #ddd;
+}
+
+td {
+  padding: 0.5em 1em;
 }

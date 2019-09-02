@@ -11,6 +11,7 @@ locad = observable({
   history: [],
 
   concepts: {},
+  entries: {},
 
   apply(event) {
     if (!event.date) event.date = get_date();
@@ -19,21 +20,33 @@ locad = observable({
         const concept = {
           id: event.id,
           name: "",
-          created_at: new Date(event.date),
-          updated_at: new Date(event.date)
+          entry_ids: []
         };
         this.concepts[concept.id] = concept;
         break;
       }
+
       case "CONCEPT_RENAMED": {
         const concept = this.concepts[event.id];
         concept.name = event.name;
         break;
       }
+
+      case "ENTRY_CREATED": {
+        const entry = {
+          id: event.id,
+          fields: {}
+        };
+        this.entries[entry.id] = entry;
+        this.concepts[event.concept_id].entry_ids.push(entry.id);
+        break;
+      }
+
       default:
         throw new Error("unknown event type");
     }
     this.history.push(event);
+    console.log(event);
   },
 
   add_concept(id) {
@@ -51,6 +64,16 @@ locad = observable({
       id,
       name
     });
+  },
+
+  create_entry(id, concept_id) {
+    if (id in this.entries) throw new Error("entry id already exists");
+    if (!(concept_id in this.concepts)) throw new Error("unknown concept id");
+    this.apply({
+      type: "ENTRY_CREATED",
+      id,
+      concept_id
+    });
   }
 });
 
@@ -66,6 +89,10 @@ function new_uuid() {
 
 function new_concept_id() {
   return "concept:" + new_uuid();
+}
+
+function new_entry_id() {
+  return "entry:" + new_uuid();
 }
 
 const router = observable({ route: "#/concepts" });
@@ -103,6 +130,8 @@ const Concepts = observer(
 );
 
 const Concept = observer(({ id }) => {
+  const concept = locad.concepts[id];
+  if (!concept) throw new Error("concept not found");
   function saveName(event) {
     const name = event.target.value;
     if (name !== locad.concepts[id].name) locad.rename_concept(id, name);
@@ -110,6 +139,10 @@ const Concept = observer(({ id }) => {
   function blurOnEnter(event) {
     if (event.key === "Enter") event.target.blur();
   }
+  const entries = concept.entry_ids.map(id => locad.entries[id]);
+  const specimen = {};
+  for (const entry of entries) Object.assign(specimen, entry.fields);
+  const columns = Object.keys(specimen);
   return html`
     <div>
       <h1>
@@ -118,9 +151,48 @@ const Concept = observer(({ id }) => {
           onblur=${saveName}
           onkeydown=${blurOnEnter}
           placeholder=${"New concept"}
-          value=${locad.concepts[id].name}
+          value=${concept.name}
         />
       </h1>
+      <hr />
+      ${concept.entry_ids.length > 0 &&
+        html`
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                ${columns.map(
+                  column =>
+                    html`
+                      <th>${column}</th>
+                    `
+                )}
+                <th><button className="add small">New field</button></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${concept.entry_ids.map(
+                (entry, row) =>
+                  html`
+                    <tr>
+                      <td>
+                        ${row + 1}
+                      </td>
+                    </tr>
+                  `
+              )}
+            </tbody>
+          </table>
+        `}
+      <button
+        class="add small"
+        onclick=${() => {
+          const id = new_entry_id();
+          locad.create_entry(id, concept.id);
+        }}
+      >
+        New entry
+      </button>
     </div>
   `;
 });
@@ -141,12 +213,7 @@ const App = observer(() => {
       break;
   }
   return html`
-    <div>
-      <${Component} ...${props} />
-      <pre><code>${locad.history
-        .map(event => JSON.stringify(event))
-        .join("\n")}</code></pre>
-    </div>
+    <${Component} ...${props} />
   `;
 });
 
