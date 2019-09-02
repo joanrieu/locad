@@ -1,0 +1,20 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: #eee;
+  font-family: "Open Sans", sans-serif;
+  font-size: 22px;
+  font-weight: 300;
+}
+
+button {
+  font: inherit;
+  padding: 0.5em 1em;
+  background: white;
+  border: 1px solid #ddd;
+}
+
+.add {
+  font-style: italic;
+}
