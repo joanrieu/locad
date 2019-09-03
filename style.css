@@ -1,13 +1,20 @@
-html,
-body {
-  padding: 1rem;
-  margin: 0;
+:root {
   background: #eee;
   color: #333;
   font-family: "Open Sans", sans-serif;
   font-size: 20px;
   font-weight: 300;
   line-height: 1.2;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  padding: 5vmin;
 }
 
 h1 small {
@@ -45,6 +52,8 @@ input {
   display: block;
   font: inherit;
   height: 1.5em;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 input:not(:focus) {
@@ -69,4 +78,8 @@ tbody {
 td {
   padding: 0.5em 1em;
   text-align: center;
+}
+
+.horizontal-scroll {
+  overflow-x: auto;
 }

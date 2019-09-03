@@ -151,15 +151,13 @@ const Concepts = observer(
         ${Object.values(locad.concepts).map(
           concept =>
             html`
-              <a href="#/concepts/${concept.id}"
-                ><button key=${concept.id}>
-                  ${concept.name || "New concept"}<br /></button
+              <a href="#/concepts/${concept.id}" key=${concept.id}
+                ><button>${concept.name || "New concept"}<br /></button
               ></a>
             `
         )}
         <button
-          key="add"
-          class="add"
+          class="add small"
           onClick=${() => {
             const id = new_concept_id();
             locad.create_concept(id);
@@ -210,11 +208,12 @@ const Fields = observer(({ concept_id }) => {
       <h2>Fields</h2>
       ${fields.length > 0 &&
         html`
-          <ul>
+          <div class="horizontal-scroll">
             ${fields.map(
               field =>
                 html`
                   <input
+                    key=${field.id}
                     onkeydown=${blur_when_enter_pressed}
                     onblur=${event => save_name(field.id, event)}
                     placeholder="New field"
@@ -222,7 +221,7 @@ const Fields = observer(({ concept_id }) => {
                   />
                 `
             )}
-          </ul>
+          </div>
         `}
       <button
         className="add small"
@@ -247,37 +246,39 @@ const Entries = observer(({ concept_id }) => {
       <h2>Entries</h2>
       ${concept.entry_ids.length > 0 &&
         html`
-          <table class="small">
-            <thead>
-              <tr>
-                <th>Row</th>
-                ${fields.map(
-                  field =>
+          <div class="horizontal-scroll">
+            <table class="small">
+              <thead>
+                <tr>
+                  <th>Row</th>
+                  ${fields.map(
+                    field =>
+                      html`
+                        <th key=${field.id}>${field.name || "New field"}</th>
+                      `
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                ${entries.map(
+                  (entry, row) =>
                     html`
-                      <th>${field.name}</th>
+                      <tr>
+                        <td>
+                          ${row + 1}
+                        </td>
+                        ${fields.map(
+                          field =>
+                            html`
+                              <td key=${field.id}>${entry.fields[field]}</td>
+                            `
+                        )}
+                      </tr>
                     `
                 )}
-              </tr>
-            </thead>
-            <tbody>
-              ${entries.map(
-                (entry, row) =>
-                  html`
-                    <tr>
-                      <td>
-                        ${row + 1}
-                      </td>
-                      ${fields.map(
-                        field =>
-                          html`
-                            <td>${entry.fields[field]}</td>
-                          `
-                      )}
-                    </tr>
-                  `
-              )}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         `}
       <button
         class="add small"
