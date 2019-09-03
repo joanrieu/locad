@@ -175,7 +175,7 @@ const Concept = observer(({ id }) => {
   const concept = locad.concepts[id];
   if (!concept) throw new Error("concept not found");
   function save_name(event) {
-    const name = event.target.value;
+    const name = event.target.value.trim();
     if (name !== concept.name) locad.rename_concept(id, name);
   }
   return html`
@@ -200,7 +200,7 @@ const Fields = observer(({ concept_id }) => {
   if (!concept) throw new Error("concept not found");
   const fields = concept.field_ids.map(id => locad.fields[id]);
   function save_name(id, event) {
-    const name = event.target.value;
+    const name = event.target.value.trim();
     if (name !== locad.fields[id].name) locad.rename_field(id, name);
   }
   return html`
