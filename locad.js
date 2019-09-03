@@ -163,7 +163,7 @@ function blur_when_enter_pressed(event) {
   if (event.key === "Enter") event.target.blur();
 }
 
-const router = observable({ route: "#/concepts" });
+const router = observable({ route: document.location.hash || "#/concepts" });
 autorun(() => (document.location.hash = router.route));
 window.onhashchange = () => (router.route = document.location.hash);
 
