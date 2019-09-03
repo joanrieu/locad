@@ -7,7 +7,7 @@ const {
 
 const html = htm.bind(h);
 
-locad = observable({
+const locad = observable({
   history: [],
 
   concepts: {},
@@ -61,6 +61,12 @@ locad = observable({
         break;
       }
 
+      case "ENTRY_FIELD_UPDATED": {
+        const entry = this.entries[event.entry_id];
+        entry.fields[event.field_id] = event.value;
+        break;
+      }
+
       default:
         throw new Error("unknown event type");
     }
@@ -109,6 +115,16 @@ locad = observable({
       type: "ENTRY_CREATED",
       id,
       concept_id
+    });
+  },
+
+  update_entry_field_value(entry_id, field_id, value) {
+    if (!(entry_id in this.entries)) throw new Error("unknown entry id");
+    if (!(field_id in this.fields)) throw new Error("unknown field id");
+    this.apply({
+      type: "ENTRY_FIELD_UPDATED",
+      entry_id,
+      field_id
     });
   }
 });
@@ -174,8 +190,7 @@ const Concepts = observer(
 const Concept = observer(({ id }) => {
   const concept = locad.concepts[id];
   if (!concept) throw new Error("concept not found");
-  function save_name(event) {
-    const name = event.target.value.trim();
+  function save_name(name) {
     if (name !== concept.name) locad.rename_concept(id, name);
   }
   return html`
@@ -184,7 +199,7 @@ const Concept = observer(({ id }) => {
         <small>Concept</small>
         <input
           onkeydown=${blur_when_enter_pressed}
-          onblur=${save_name}
+          onblur=${event => save_name(event.target.value.trim())}
           placeholder=${"New concept"}
           value=${concept.name}
         />
@@ -199,8 +214,7 @@ const Fields = observer(({ concept_id }) => {
   const concept = locad.concepts[concept_id];
   if (!concept) throw new Error("concept not found");
   const fields = concept.field_ids.map(id => locad.fields[id]);
-  function save_name(id, event) {
-    const name = event.target.value.trim();
+  function save_name(id, name) {
     if (name !== locad.fields[id].name) locad.rename_field(id, name);
   }
   return html`
@@ -215,7 +229,8 @@ const Fields = observer(({ concept_id }) => {
                   <input
                     key=${field.id}
                     onkeydown=${blur_when_enter_pressed}
-                    onblur=${event => save_name(field.id, event)}
+                    onblur=${event =>
+                      save_name(field.id, event.target.value.trim())}
                     placeholder="New field"
                     value=${field.name}
                   />
@@ -241,6 +256,10 @@ const Entries = observer(({ concept_id }) => {
   if (!concept) throw new Error("concept not found");
   const fields = concept.field_ids.map(id => locad.fields[id]);
   const entries = concept.entry_ids.map(id => locad.entries[id]);
+  function save_entry_field_value(entry, field, value) {
+    if (value !== entry.fields[field.id])
+      locad.update_entry_field_value(entry.id, field.id, value);
+  }
   return html`
     <div>
       <h2>Entries</h2>
@@ -270,7 +289,18 @@ const Entries = observer(({ concept_id }) => {
                         ${fields.map(
                           field =>
                             html`
-                              <td key=${field.id}>${entry.fields[field]}</td>
+                              <td key=${field.id}>
+                                <input
+                                  onkeydown=${blur_when_enter_pressed}
+                                  onblur=${event =>
+                                    save_entry_field_value(
+                                      entry,
+                                      field,
+                                      event.target.value.trim()
+                                    )}
+                                  value=${entry.fields[field]}
+                                />
+                              </td>
                             `
                         )}
                       </tr>
