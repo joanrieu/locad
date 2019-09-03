@@ -129,6 +129,13 @@ const locad = observable({
   }
 });
 
+for (const event of JSON.parse(localStorage.getItem("locad.history") || "[]"))
+  locad.apply(event);
+
+autorun(() =>
+  localStorage.setItem("locad.history", JSON.stringify(locad.history))
+);
+
 function get_date() {
   return new Date().toISOString();
 }
