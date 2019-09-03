@@ -306,7 +306,7 @@ const Entries = observer(({ concept_id }) => {
                                       field,
                                       event.target.value.trim()
                                     )}
-                                  value=${entry.fields[field]}
+                                  value=${entry.fields[field.id]}
                                 />
                               </td>
                             `
