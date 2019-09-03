@@ -124,7 +124,8 @@ const locad = observable({
     this.apply({
       type: "ENTRY_FIELD_UPDATED",
       entry_id,
-      field_id
+      field_id,
+      value
     });
   }
 });
