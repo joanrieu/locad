@@ -338,15 +338,17 @@ const Entries = observer(({ concept_id }) => {
     if (typeof value === "undefined") return;
     const isFocused = [entry.id, field.id].join() === focus.entry_field;
     if (isFocused) return value;
-    const currency_match =
-      value.match(/^(?<currency>[A-Z]{3})\s*(?<amount>\d+(\.\d+)?)$/) ||
-      value.match(/^(?<amount>\d+(\.\d+)?)\s*(?<currency>[A-Z]{3})$/);
-    if (currency_match) {
-      const { amount, currency } = currency_match.groups;
-      return parseFloat(amount).toLocaleString(undefined, {
-        style: "currency",
-        currency
-      });
+    const currency = (value.match(/^([A-Z]{3})\s*/) ||
+      value.match(/\s*([A-Z]{3})$/) ||
+      [])[1];
+    if (currency) {
+      const amount_text = value.replace(currency, "").trim();
+      const amount = parseFloat(amount_text);
+      if (isFinite(amount) && amount.toString() === amount_text)
+        return amount.toLocaleString(undefined, {
+          style: "currency",
+          currency
+        });
     }
     const number = parseFloat(value);
     if (isFinite(number) && number.toString() === value)
