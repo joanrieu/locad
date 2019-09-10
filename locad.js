@@ -334,7 +334,7 @@ const Entries = observer(({ concept_id }) => {
     focus.entry_field = [entry.id, field.id].join();
   }
   function format_entry_field_value(entry, field) {
-    let value = entry.fields[field.id];
+    const value = entry.fields[field.id];
     if (typeof value === "undefined") return;
     const isFocused = [entry.id, field.id].join() === focus.entry_field;
     if (isFocused) return value;
@@ -348,6 +348,14 @@ const Entries = observer(({ concept_id }) => {
         return amount.toLocaleString(undefined, {
           style: "currency",
           currency
+        });
+    }
+    if (value.endsWith("%")) {
+      const percent_text = value.replace(/%$/, "").trim();
+      const percent = parseFloat(percent_text);
+      if (isFinite(percent) && percent.toString() === percent_text)
+        return (percent / 100).toLocaleString(undefined, {
+          style: "percent"
         });
     }
     const number = parseFloat(value);
