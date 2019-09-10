@@ -70,6 +70,7 @@ input:not(:focus) {
   border: none;
 }
 
+small,
 .small {
   font-size: 0.7em;
 }

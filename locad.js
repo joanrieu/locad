@@ -248,13 +248,15 @@ const Concept = observer(({ id }) => {
   return html`
     <div>
       <h1>
-        <small>Concept</small>
-        <input
-          onkeydown=${blur_when_enter_pressed}
-          onblur=${event => save_name(event.target.value.trim())}
-          placeholder=${"New concept"}
-          value=${concept.name}
-        />
+        <label>
+          <small>Concept</small>
+          <input
+            onkeydown=${blur_when_enter_pressed}
+            onblur=${event => save_name(event.target.value.trim())}
+            placeholder=${"New concept"}
+            value=${concept.name}
+          />
+        </label>
       </h1>
       <${Fields} concept_id=${concept.id} />
       <${Entries} concept_id=${concept.id} />
