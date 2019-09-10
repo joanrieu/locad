@@ -321,15 +321,82 @@ const Fields = observer(({ concept_id }) => {
   `;
 });
 
-const focus = observable({
-  entry_field: null
-});
-
 const Entries = observer(({ concept_id }) => {
   const concept = locad.concepts[concept_id];
   if (!concept) throw new Error("concept not found");
   const fields = concept.field_ids.map(id => locad.fields[id]);
   const entries = concept.entry_ids.map(id => locad.entries[id]);
+  return html`
+    <div>
+      <h2>Entries</h2>
+      ${concept.entry_ids.length > 0 &&
+        html`
+          <div class="horizontal-scroll">
+            <table class="small">
+              <thead>
+                <tr>
+                  <th>Row</th>
+                  ${fields.map(
+                    field =>
+                      html`
+                        <th key=${field.id}>${field.name || "New field"}</th>
+                      `
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                ${entries.map(
+                  (entry, row) =>
+                    html`
+                      <tr key=${entry.id}>
+                        <td>
+                          ${row + 1}
+                        </td>
+                        ${fields.map(
+                          field =>
+                            html`
+                              <td key=${field.id}>
+                                <${EntryFieldInput}
+                                  entry_id=${entry.id}
+                                  field_id=${field.id}
+                                />
+                              </td>
+                            `
+                        )}
+                        <td class="action">
+                          <button onclick=${() => locad.delete_entry(entry.id)}>
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    `
+                )}
+              </tbody>
+            </table>
+          </div>
+        `}
+      <button
+        class="add small"
+        onclick=${() => {
+          const id = new_entry_id();
+          locad.create_entry(id, concept.id);
+        }}
+      >
+        Add entry
+      </button>
+    </div>
+  `;
+});
+
+const focus = observable({
+  entry_field: null
+});
+
+const EntryFieldInput = observer(({ entry_id, field_id }) => {
+  const entry = locad.entries[entry_id];
+  if (!entry) throw new Error("entry not found");
+  const field = locad.fields[field_id];
+  if (!field) throw new Error("field not found");
   function focus_entry_field(entry, field) {
     focus.entry_field = [entry.id, field.id].join();
   }
@@ -379,75 +446,13 @@ const Entries = observer(({ concept_id }) => {
     focus.entry_field = null;
   }
   return html`
-    <div>
-      <h2>Entries</h2>
-      ${concept.entry_ids.length > 0 &&
-        html`
-          <div class="horizontal-scroll">
-            <table class="small">
-              <thead>
-                <tr>
-                  <th>Row</th>
-                  ${fields.map(
-                    field =>
-                      html`
-                        <th key=${field.id}>${field.name || "New field"}</th>
-                      `
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                ${entries.map(
-                  (entry, row) =>
-                    html`
-                      <tr key=${entry.id}>
-                        <td>
-                          ${row + 1}
-                        </td>
-                        ${fields.map(
-                          field =>
-                            html`
-                              <td key=${field.id}>
-                                <input
-                                  onkeydown=${blur_when_enter_pressed}
-                                  onfocus=${() =>
-                                    focus_entry_field(entry, field)}
-                                  onblur=${event =>
-                                    save_entry_field_value(
-                                      entry,
-                                      field,
-                                      event.target.value.trim()
-                                    )}
-                                  value=${format_entry_field_value(
-                                    entry,
-                                    field
-                                  )}
-                                />
-                              </td>
-                            `
-                        )}
-                        <td class="action">
-                          <button onclick=${() => locad.delete_entry(entry.id)}>
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    `
-                )}
-              </tbody>
-            </table>
-          </div>
-        `}
-      <button
-        class="add small"
-        onclick=${() => {
-          const id = new_entry_id();
-          locad.create_entry(id, concept.id);
-        }}
-      >
-        Add entry
-      </button>
-    </div>
+    <input
+      onkeydown=${blur_when_enter_pressed}
+      onfocus=${() => focus_entry_field(entry, field)}
+      onblur=${event =>
+        save_entry_field_value(entry, field, event.target.value.trim())}
+      value=${format_entry_field_value(entry, field)}
+    />
   `;
 });
 
