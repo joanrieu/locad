@@ -1,7 +1,7 @@
 const {
   preact: { h, Component, render },
   htm,
-  mobx: { autorun, observable },
+  mobx: { autorun, observable, runInAction },
   mobxPreact: { observer }
 } = self;
 
@@ -15,82 +15,88 @@ const locad = observable({
   entries: {},
 
   apply(event) {
-    if (!event.date) event.date = get_date();
-    console.log(event);
-    switch (event.type) {
-      case "CONCEPT_CREATED": {
-        const concept = {
-          id: event.id,
-          name: "",
-          field_ids: [],
-          entry_ids: []
-        };
-        this.concepts[concept.id] = concept;
-        break;
-      }
+    runInAction(event.type, () => {
+      if (!event.date) event.date = get_date();
+      console.log(event);
+      switch (event.type) {
+        case "CONCEPT_CREATED": {
+          const concept = {
+            id: event.id,
+            name: "",
+            field_ids: [],
+            entry_ids: []
+          };
+          this.concepts[concept.id] = concept;
+          break;
+        }
 
-      case "CONCEPT_RENAMED": {
-        const concept = this.concepts[event.id];
-        concept.name = event.name;
-        break;
-      }
+        case "CONCEPT_RENAMED": {
+          const concept = this.concepts[event.id];
+          concept.name = event.name;
+          break;
+        }
 
-      case "FIELD_CREATED": {
-        const field = {
-          id: event.id,
-          name: ""
-        };
-        locad.fields[field.id] = field;
-        locad.concepts[event.concept_id].field_ids.push(field.id);
-        break;
-      }
+        case "FIELD_CREATED": {
+          const field = {
+            id: event.id,
+            name: ""
+          };
+          locad.fields[field.id] = field;
+          locad.concepts[event.concept_id].field_ids.push(field.id);
+          break;
+        }
 
-      case "FIELD_RENAMED": {
-        const field = this.fields[event.id];
-        field.name = event.name;
-        break;
-      }
+        case "FIELD_RENAMED": {
+          const field = this.fields[event.id];
+          field.name = event.name;
+          break;
+        }
 
-      case "FIELD_DELETED": {
-        const field = this.fields[event.id];
-        for (const entry of Object.values(this.entries))
-          if (field.id in entry.fields) delete entry.fields[field.id];
-        for (const concept of Object.values(this.concepts))
-          if (concept.field_ids.includes(field.id))
-            concept.field_ids = concept.field_ids.filter(id => id !== field.id);
-        delete this.fields[field.id];
-        break;
-      }
+        case "FIELD_DELETED": {
+          const field = this.fields[event.id];
+          for (const entry of Object.values(this.entries))
+            if (field.id in entry.fields) delete entry.fields[field.id];
+          for (const concept of Object.values(this.concepts))
+            if (concept.field_ids.includes(field.id))
+              concept.field_ids = concept.field_ids.filter(
+                id => id !== field.id
+              );
+          delete this.fields[field.id];
+          break;
+        }
 
-      case "ENTRY_CREATED": {
-        const entry = {
-          id: event.id,
-          fields: {}
-        };
-        this.entries[entry.id] = entry;
-        this.concepts[event.concept_id].entry_ids.push(entry.id);
-        break;
-      }
+        case "ENTRY_CREATED": {
+          const entry = {
+            id: event.id,
+            fields: {}
+          };
+          this.entries[entry.id] = entry;
+          this.concepts[event.concept_id].entry_ids.push(entry.id);
+          break;
+        }
 
-      case "ENTRY_FIELD_UPDATED": {
-        const entry = this.entries[event.entry_id];
-        entry.fields[event.field_id] = event.value;
-        break;
-      }
+        case "ENTRY_FIELD_UPDATED": {
+          const entry = this.entries[event.entry_id];
+          entry.fields[event.field_id] = event.value;
+          break;
+        }
 
-      case "ENTRY_DELETED": {
-        const entry = this.entries[event.id];
-        for (const concept of Object.values(this.concepts))
-          if (concept.entry_ids.includes(entry.id))
-            concept.entry_ids = concept.entry_ids.filter(id => id !== entry.id);
-        delete this.entries[entry.id];
-        break;
-      }
+        case "ENTRY_DELETED": {
+          const entry = this.entries[event.id];
+          for (const concept of Object.values(this.concepts))
+            if (concept.entry_ids.includes(entry.id))
+              concept.entry_ids = concept.entry_ids.filter(
+                id => id !== entry.id
+              );
+          delete this.entries[entry.id];
+          break;
+        }
 
-      default:
-        throw new Error("unknown event type");
-    }
-    this.history.push(event);
+        default:
+          throw new Error("unknown event type");
+      }
+      this.history.push(event);
+    });
   },
 
   create_concept(id) {
@@ -166,12 +172,14 @@ const locad = observable({
   }
 });
 
-for (const event of JSON.parse(localStorage.getItem("locad.history") || "[]"))
-  locad.apply(event);
+const HISTORY_KEY = "locad.history";
 
-autorun(() =>
-  localStorage.setItem("locad.history", JSON.stringify(locad.history))
-);
+runInAction(HISTORY_KEY, () => {
+  for (const event of JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"))
+    locad.apply(event);
+});
+
+autorun(() => localStorage.setItem(HISTORY_KEY, JSON.stringify(locad.history)));
 
 function get_date() {
   return new Date().toISOString();
