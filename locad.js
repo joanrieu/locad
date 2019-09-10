@@ -231,19 +231,32 @@ const Fields = observer(({ concept_id }) => {
       ${fields.length > 0 &&
         html`
           <div class="horizontal-scroll">
-            ${fields.map(
-              field =>
-                html`
-                  <input
-                    key=${field.id}
-                    onkeydown=${blur_when_enter_pressed}
-                    onblur=${event =>
-                      save_name(field.id, event.target.value.trim())}
-                    placeholder="New field"
-                    value=${field.name}
-                  />
-                `
-            )}
+            <table class="small">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${fields.map(
+                  field =>
+                    html`
+                      <tr>
+                        <td>
+                          <input
+                            key=${field.id}
+                            onkeydown=${blur_when_enter_pressed}
+                            onblur=${event =>
+                              save_name(field.id, event.target.value.trim())}
+                            placeholder="New field"
+                            value=${field.name}
+                          />
+                        </td>
+                      </tr>
+                    `
+                )}
+              </tbody>
+            </table>
           </div>
         `}
       <button
