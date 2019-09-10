@@ -321,14 +321,29 @@ const Fields = observer(({ concept_id }) => {
   `;
 });
 
+const focus = observable({
+  entry_field: null
+});
+
 const Entries = observer(({ concept_id }) => {
   const concept = locad.concepts[concept_id];
   if (!concept) throw new Error("concept not found");
   const fields = concept.field_ids.map(id => locad.fields[id]);
   const entries = concept.entry_ids.map(id => locad.entries[id]);
+  function focus_entry_field(entry, field) {
+    focus.entry_field = [entry.id, field.id].join();
+  }
+  function format_entry_field_value(entry, field) {
+    let value = entry.fields[field.id];
+    if (parseFloat(value) == value) value = parseFloat(value);
+    const isFocused = [entry.id, field.id].join() === focus.entry_field;
+    if (!isFocused && typeof value === "number") return value.toLocaleString();
+    return value;
+  }
   function save_entry_field_value(entry, field, value) {
     if (value !== entry.fields[field.id])
       locad.update_entry_field_value(entry.id, field.id, value);
+    focus.entry_field = null;
   }
   return html`
     <div>
@@ -362,13 +377,18 @@ const Entries = observer(({ concept_id }) => {
                               <td key=${field.id}>
                                 <input
                                   onkeydown=${blur_when_enter_pressed}
+                                  onfocus=${() =>
+                                    focus_entry_field(entry, field)}
                                   onblur=${event =>
                                     save_entry_field_value(
                                       entry,
                                       field,
                                       event.target.value.trim()
                                     )}
-                                  value=${entry.fields[field.id]}
+                                  value=${format_entry_field_value(
+                                    entry,
+                                    field
+                                  )}
                                 />
                               </td>
                             `
