@@ -335,10 +335,21 @@ const Entries = observer(({ concept_id }) => {
   }
   function format_entry_field_value(entry, field) {
     let value = entry.fields[field.id];
-    if (parseFloat(value) == value) value = parseFloat(value);
+    if (typeof value === "undefined") return;
     const isFocused = [entry.id, field.id].join() === focus.entry_field;
-    if (!isFocused && typeof value === "number") return value.toLocaleString();
-    return value;
+    if (isFocused) return value;
+    const currency_match =
+      value.match(/^(?<currency>[A-Z]{3})\s*(?<amount>\d+(\.\d+)?)$/) ||
+      value.match(/^(?<amount>\d+(\.\d+)?)\s*(?<currency>[A-Z]{3})$/);
+    if (currency_match) {
+      const { amount, currency } = currency_match.groups;
+      return parseFloat(amount).toLocaleString(undefined, {
+        style: "currency",
+        currency
+      });
+    }
+    if (parseFloat(value) == value) value = parseFloat(value);
+    if (typeof value === "number") return value.toLocaleString();
   }
   function save_entry_field_value(entry, field, value) {
     if (value !== entry.fields[field.id])
