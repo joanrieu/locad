@@ -360,7 +360,7 @@ const Entries = observer(({ concept_id }) => {
     }
     if (value.startsWith("=")) {
       const expr = value.slice(1);
-      if (expr.match(/^(\d|\(|\)|\+|-|\*|\/|\s)+$/)) {
+      if (expr.match(/^(\d|\.|\(|\)|\+|-|\*|\/|\s)+$/)) {
         try {
           return eval(expr).toLocaleString();
         } catch (error) {
