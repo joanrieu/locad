@@ -358,6 +358,16 @@ const Entries = observer(({ concept_id }) => {
           style: "percent"
         });
     }
+    if (value.startsWith("=")) {
+      const expr = value.slice(1);
+      if (expr.match(/^(\d|\(|\)|\+|-|\*|\/|\s)+$/)) {
+        try {
+          return eval(expr).toLocaleString();
+        } catch (error) {
+          return "#ERROR";
+        }
+      }
+    }
     const number = parseFloat(value);
     if (isFinite(number) && number.toString() === value)
       return number.toLocaleString();
