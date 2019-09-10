@@ -375,6 +375,29 @@ const Entries = observer(({ concept_id }) => {
                 )}
               </tbody>
             </table>
+            <div class="grid">
+              ${entries.map(
+                entry =>
+                  html`
+                    <div key=${entry.id} class="card">
+                      ${fields.map(
+                        field =>
+                          html`
+                            <label
+                              ><small>
+                                ${field.name}
+                              </small>
+                              <${EntryFieldInput}
+                                entry_id=${entry.id}
+                                field_id=${field.id}
+                              />
+                            </label>
+                          `
+                      )}
+                    </div>
+                  `
+              )}
+            </div>
           </div>
         `}
       <button
