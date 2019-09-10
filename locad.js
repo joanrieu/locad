@@ -51,6 +51,17 @@ const locad = observable({
         break;
       }
 
+      case "FIELD_DELETED": {
+        const field = this.fields[event.id];
+        for (const entry of Object.values(this.entries))
+          if (field.id in entry.fields) delete entry.fields[field.id];
+        for (const concept of Object.values(this.concepts))
+          if (concept.field_ids.includes(field.id))
+            concept.field_ids = concept.field_ids.filter(id => id !== field.id);
+        delete this.fields[field.id];
+        break;
+      }
+
       case "ENTRY_CREATED": {
         const entry = {
           id: event.id,
@@ -114,6 +125,14 @@ const locad = observable({
       type: "FIELD_RENAMED",
       id,
       name
+    });
+  },
+
+  delete_field(id) {
+    if (!(id in this.fields)) throw new Error("unknown field id");
+    this.apply({
+      type: "FIELD_DELETED",
+      id
     });
   },
 
@@ -268,6 +287,11 @@ const Fields = observer(({ concept_id }) => {
                             placeholder="New field"
                             value=${field.name}
                           />
+                        </td>
+                        <td class="action">
+                          <button onclick=${() => locad.delete_field(field.id)}>
+                            🗑️
+                          </button>
                         </td>
                       </tr>
                     `
