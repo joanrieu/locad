@@ -348,8 +348,10 @@ const Entries = observer(({ concept_id }) => {
         currency
       });
     }
-    if (parseFloat(value) == value) value = parseFloat(value);
-    if (typeof value === "number") return value.toLocaleString();
+    const number = parseFloat(value);
+    if (isFinite(number) && number.toString() === value)
+      return number.toLocaleString();
+    return value;
   }
   function save_entry_field_value(entry, field, value) {
     if (value !== entry.fields[field.id])
