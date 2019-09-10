@@ -67,6 +67,15 @@ const locad = observable({
         break;
       }
 
+      case "ENTRY_DELETED": {
+        const entry = this.entries[event.id];
+        for (const concept of Object.values(this.concepts))
+          if (concept.entry_ids.includes(entry.id))
+            concept.entry_ids = concept.entry_ids.filter(id => id !== entry.id);
+        delete this.entries[entry.id];
+        break;
+      }
+
       default:
         throw new Error("unknown event type");
     }
@@ -126,6 +135,14 @@ const locad = observable({
       entry_id,
       field_id,
       value
+    });
+  },
+
+  delete_entry(id) {
+    if (!(id in this.entries)) throw new Error("unknown entry id");
+    this.apply({
+      type: "ENTRY_DELETED",
+      id
     });
   }
 });
@@ -303,7 +320,7 @@ const Entries = observer(({ concept_id }) => {
                 ${entries.map(
                   (entry, row) =>
                     html`
-                      <tr>
+                      <tr key=${entry.id}>
                         <td>
                           ${row + 1}
                         </td>
@@ -324,6 +341,11 @@ const Entries = observer(({ concept_id }) => {
                               </td>
                             `
                         )}
+                        <td class="action">
+                          <button onclick=${() => locad.delete_entry(entry.id)}>
+                            🗑️
+                          </button>
+                        </td>
                       </tr>
                     `
                 )}

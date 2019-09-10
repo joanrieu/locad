@@ -89,6 +89,15 @@ td {
   text-align: center;
 }
 
+td.action {
+  padding: 0;
+}
+
+td.action button {
+  margin: 0;
+  border: none;
+}
+
 .horizontal-scroll {
   overflow-x: auto;
 }
