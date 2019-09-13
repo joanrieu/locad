@@ -161,12 +161,27 @@ fieldset {
   background: white;
 }
 
-fieldset label {
-  margin-left: 1rem;
+fieldset span {
+  margin: 0 1rem;
 }
 
 input[type="radio"] {
   display: inline-block;
-  width: initial;
-  height: initial;
+  width: 0px;
+  height: 0px;
+  margin: 0px;
+}
+
+input[type="radio"] + label {
+  display: inline-block;
+  padding: 0.2rem 1rem;
+  border-bottom: 2px solid #ddd;
+}
+
+input[type="radio"]:focus + label {
+  background: #eee;
+}
+
+input[type="radio"]:checked + label {
+  border-bottom: 2px solid #3cf;
 }

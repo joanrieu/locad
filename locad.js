@@ -420,23 +420,27 @@ const Entries = observer(({ concept_id }) => {
           <div class="horizontal-scroll">
             <div class="small">
               <fieldset>
-                Visualization:
-                <label>
-                  <input
-                    type="radio"
-                    name="view.type"
-                    checked=${view.type === "table"}
-                    onchange=${() => (view.type = "table")}
-                  />
+                <span>
+                  Visualization:
+                </span>
+                <input
+                  type="radio"
+                  name="view.type"
+                  id="view.type.table"
+                  checked=${view.type === "table"}
+                  onchange=${() => (view.type = "table")}
+                />
+                <label for="view.type.table">
                   Table
                 </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="view.type"
-                    checked=${view.type === "card"}
-                    onchange=${() => (view.type = "card")}
-                  />
+                <input
+                  type="radio"
+                  name="view.type"
+                  id="view.type.card"
+                  checked=${view.type === "card"}
+                  onchange=${() => (view.type = "card")}
+                />
+                <label for="view.type.card">
                   Card
                 </label>
               </fieldset>
