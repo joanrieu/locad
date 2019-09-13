@@ -9,6 +9,8 @@ const html = htm.bind(h);
 
 const locad = observable({
   history: [],
+  undo_stack: [],
+  redo_stack: [],
 
   concepts: {},
   fields: {},
@@ -16,8 +18,15 @@ const locad = observable({
 
   apply(event) {
     runInAction(event.type, () => {
+      const { concepts, fields, entries } = this;
+      const self = { concepts, fields, entries };
+      this.undo_stack.push(JSON.stringify(self));
+      const redo_stack_backup = this.redo_stack;
+      this.redo_stack = [];
+
       if (!event.date) event.date = get_date();
       console.log(event);
+
       switch (event.type) {
         case "CONCEPT_CREATED": {
           const concept = {
@@ -92,9 +101,26 @@ const locad = observable({
           break;
         }
 
+        case "UNDO": {
+          const current = this.undo_stack.pop();
+          const previous = this.undo_stack.pop();
+          this.redo_stack = redo_stack_backup;
+          this.redo_stack.push(current);
+          Object.assign(this, JSON.parse(previous));
+          break;
+        }
+
+        case "REDO": {
+          this.redo_stack = redo_stack_backup;
+          const next = this.redo_stack.pop();
+          Object.assign(this, JSON.parse(next));
+          break;
+        }
+
         default:
           throw new Error("unknown event type");
       }
+
       this.history.push(event);
     });
   },
@@ -168,6 +194,28 @@ const locad = observable({
     this.apply({
       type: "ENTRY_DELETED",
       id
+    });
+  },
+
+  can_undo() {
+    return this.undo_stack.length > 0;
+  },
+
+  undo() {
+    if (!this.can_undo()) throw new Error("nothing to undo");
+    this.apply({
+      type: "UNDO"
+    });
+  },
+
+  can_redo() {
+    return this.redo_stack.length > 0;
+  },
+
+  redo() {
+    if (!this.can_redo()) throw new Error("nothing to redo");
+    this.apply({
+      type: "REDO"
     });
   }
 });
