@@ -203,8 +203,12 @@ function new_entry_id() {
   return "entry:" + new_uuid();
 }
 
-function blur_when_enter_pressed(event) {
+function save_or_cancel(event, original) {
   if (event.key === "Enter") event.target.blur();
+  else if (event.key === "Escape") {
+    event.target.value = original;
+    event.target.blur();
+  }
 }
 
 const router = observable({ route: document.location.hash || "#/concepts" });
@@ -251,7 +255,7 @@ const Concept = observer(({ id }) => {
         <label>
           <small>Concept</small>
           <input
-            onkeydown=${blur_when_enter_pressed}
+            onkeydown=${event => save_or_cancel(event, concept.name)}
             onblur=${event => save_name(event.target.value.trim())}
             placeholder=${"New concept"}
             value=${concept.name}
@@ -291,7 +295,8 @@ const Fields = observer(({ concept_id }) => {
                         <td>
                           <input
                             key=${field.id}
-                            onkeydown=${blur_when_enter_pressed}
+                            onkeydown=${event =>
+                              save_or_cancel(event, field.name)}
                             onblur=${event =>
                               save_name(field.id, event.target.value.trim())}
                             placeholder="New field"
@@ -472,7 +477,8 @@ const EntryFieldInput = observer(({ entry_id, field_id }) => {
   }
   return html`
     <input
-      onkeydown=${blur_when_enter_pressed}
+      onkeydown=${event =>
+        save_or_cancel(event, format_entry_field_value(entry, field))}
       onfocus=${() => focus_entry_field(entry, field)}
       onblur=${event =>
         save_entry_field_value(entry, field, event.target.value.trim())}
