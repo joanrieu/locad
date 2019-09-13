@@ -21,12 +21,13 @@ h2 {
 }
 
 body {
-  padding: 5vmin;
+  padding: 1rem;
+  padding-top: 3rem;
 }
 
 h1,
 h2 {
-  margin: 1em auto 0.3em;
+  margin: 1.5rem auto 0.5rem;
 }
 
 h1 {
@@ -109,4 +110,46 @@ td.action button {
 
 .horizontal-scroll {
   overflow-x: auto;
+}
+
+nav {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3rem;
+  padding: 0.5rem 5vmin;
+  border-bottom: 1px solid #ddd;
+  background: white;
+}
+
+nav > div:first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+nav > div:last-child {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+}
+
+nav > .logo {
+  grid-column: 1 / span 2;
+  grid-row: 1;
+  justify-self: center;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+nav button {
+  margin: 0;
+}
+
+nav button + button {
+  margin-left: 1rem;
 }

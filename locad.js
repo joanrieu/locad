@@ -263,9 +263,17 @@ const router = observable({ route: document.location.hash || "#/concepts" });
 autorun(() => (document.location.hash = router.route));
 window.onhashchange = () => (router.route = document.location.hash);
 
+const Logo = () =>
+  html`
+    <em class="logo">Locad</em>
+  `;
+
 const Concepts = observer(
   () => html`
     <div>
+      <nav class="small">
+        <${Logo} />
+      </nav>
       <h1>Concepts</h1>
       <div class="grid">
         ${Object.values(locad.concepts).map(
@@ -299,6 +307,26 @@ const Concept = observer(({ id }) => {
   }
   return html`
     <div>
+      <nav class="small">
+        <div>
+          <a href="#/concepts"><button>All concepts</button></a>
+        </div>
+        <${Logo} />
+        <div>
+          ${locad.can_undo() &&
+            html`
+              <button key="undo" onclick=${() => locad.undo()}>
+                Undo
+              </button>
+            `}
+          ${locad.can_redo() &&
+            html`
+              <button key="redo" onclick=${() => locad.redo()}>
+                Redo
+              </button>
+            `}
+        </div>
+      </nav>
       <h1>
         <label>
           <small>Concept</small>
