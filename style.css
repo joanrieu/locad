@@ -153,3 +153,20 @@ nav button {
 nav button + button {
   margin-left: 1rem;
 }
+
+fieldset {
+  padding: 0.5rem;
+  margin: 1rem 0;
+  border: 1px solid #ddd;
+  background: white;
+}
+
+fieldset label {
+  margin-left: 1rem;
+}
+
+input[type="radio"] {
+  display: inline-block;
+  width: initial;
+  height: initial;
+}

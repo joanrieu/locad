@@ -404,6 +404,11 @@ const Fields = observer(({ concept_id }) => {
   `;
 });
 
+const view = observable({
+  type: "table",
+  focus: null
+});
+
 const Entries = observer(({ concept_id }) => {
   const concept = locad.concepts[concept_id];
   if (!concept) throw new Error("concept not found");
@@ -413,14 +418,43 @@ const Entries = observer(({ concept_id }) => {
       ${concept.entry_ids.length > 0 &&
         html`
           <div class="horizontal-scroll">
-            <${EntriesTable}
-              entry_ids=${concept.entry_ids}
-              field_ids=${concept.field_ids}
-            />
-            <${EntriesCards}
-              entry_ids=${concept.entry_ids}
-              field_ids=${concept.field_ids}
-            />
+            <div class="small">
+              <fieldset>
+                Visualization:
+                <label>
+                  <input
+                    type="radio"
+                    name="view.type"
+                    checked=${view.type === "table"}
+                    onchange=${() => (view.type = "table")}
+                  />
+                  Table
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="view.type"
+                    checked=${view.type === "card"}
+                    onchange=${() => (view.type = "card")}
+                  />
+                  Card
+                </label>
+              </fieldset>
+            </div>
+            ${view.type === "table" &&
+              html`
+                <${EntriesTable}
+                  entry_ids=${concept.entry_ids}
+                  field_ids=${concept.field_ids}
+                />
+              `}
+            ${view.type === "card" &&
+              html`
+                <${EntriesCards}
+                  entry_ids=${concept.entry_ids}
+                  field_ids=${concept.field_ids}
+                />
+              `}
           </div>
         `}
       <button
@@ -436,83 +470,83 @@ const Entries = observer(({ concept_id }) => {
   `;
 });
 
-const EntriesTable = ({ entry_ids, field_ids }) => html`
-  <table class="small">
-    <thead>
-      <tr>
-        <th>Row</th>
-        ${field_ids
-          .map(id => locad.fields[id])
-          .map(
-            field =>
-              html`
-                <th key=${field.id}>${field.name || "New field"}</th>
-              `
-          )}
-      </tr>
-    </thead>
-    <tbody>
+const EntriesTable = observer(
+  ({ entry_ids, field_ids }) => html`
+    <table class="small">
+      <thead>
+        <tr>
+          <th>Row</th>
+          ${field_ids
+            .map(id => locad.fields[id])
+            .map(
+              field =>
+                html`
+                  <th key=${field.id}>${field.name || "New field"}</th>
+                `
+            )}
+        </tr>
+      </thead>
+      <tbody>
+        ${entry_ids.map(
+          (entry_id, row) =>
+            html`
+              <tr key=${entry_id}>
+                <td>
+                  ${row + 1}
+                </td>
+                ${field_ids.map(
+                  field_id =>
+                    html`
+                      <td key=${field_id}>
+                        <${EntryFieldInput}
+                          entry_id=${entry_id}
+                          field_id=${field_id}
+                        />
+                      </td>
+                    `
+                )}
+                <td class="action">
+                  <button onclick=${() => locad.delete_entry(entry_id)}>
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            `
+        )}
+      </tbody>
+    </table>
+  `
+);
+
+const EntriesCards = observer(
+  ({ entry_ids, field_ids }) => html`
+    <div class="grid">
       ${entry_ids.map(
-        (entry_id, row) =>
+        entry_id =>
           html`
-            <tr key=${entry_id}>
-              <td>
-                ${row + 1}
-              </td>
-              ${field_ids.map(
-                field_id =>
-                  html`
-                    <td key=${field_id}>
-                      <${EntryFieldInput}
-                        entry_id=${entry_id}
-                        field_id=${field_id}
-                      />
-                    </td>
-                  `
-              )}
-              <td class="action">
-                <button onclick=${() => locad.delete_entry(entry_id)}>
-                  🗑️
-                </button>
-              </td>
-            </tr>
+            <div key=${entry_id} class="card">
+              ${field_ids
+                .map(id => locad.fields[id])
+                .map(
+                  field =>
+                    html`
+                      <label
+                        ><small>
+                          ${field.name}
+                        </small>
+                        <${EntryFieldInput}
+                          entry_id=${entry_id}
+                          field_id=${field.id}
+                        />
+                      </label>
+                    `
+                )}
+            </div>
           `
       )}
-    </tbody>
-  </table>
-`;
-
-const EntriesCards = ({ entry_ids, field_ids }) => html`
-  <div class="grid">
-    ${entry_ids.map(
-      entry_id =>
-        html`
-          <div key=${entry_id} class="card">
-            ${field_ids
-              .map(id => locad.fields[id])
-              .map(
-                field =>
-                  html`
-                    <label
-                      ><small>
-                        ${field.name}
-                      </small>
-                      <${EntryFieldInput}
-                        entry_id=${entry_id}
-                        field_id=${field.id}
-                      />
-                    </label>
-                  `
-              )}
-          </div>
-        `
-    )}
-  </div>
-`;
-
-const focus = observable({
-  entry_field: null
-});
+    </div>
+  `
+);
 
 const EntryFieldInput = observer(({ entry_id, field_id }) => {
   const entry = locad.entries[entry_id];
@@ -520,12 +554,12 @@ const EntryFieldInput = observer(({ entry_id, field_id }) => {
   const field = locad.fields[field_id];
   if (!field) throw new Error("field not found");
   function focus_entry_field(entry, field) {
-    focus.entry_field = [entry.id, field.id].join();
+    view.focus = [entry.id, field.id].join();
   }
   function format_entry_field_value(entry, field) {
     const value = entry.fields[field.id];
     if (typeof value === "undefined") return;
-    const isFocused = [entry.id, field.id].join() === focus.entry_field;
+    const isFocused = [entry.id, field.id].join() === view.focus;
     if (isFocused) return value;
     const currency = (value.match(/^([A-Z]{3})\s*/) ||
       value.match(/\s*([A-Z]{3})$/) ||
@@ -565,7 +599,7 @@ const EntryFieldInput = observer(({ entry_id, field_id }) => {
   function save_entry_field_value(entry, field, value) {
     if (value !== entry.fields[field.id])
       locad.update_entry_field_value(entry.id, field.id, value);
-    focus.entry_field = null;
+    view.focus = null;
   }
   return html`
     <input
