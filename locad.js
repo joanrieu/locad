@@ -14,7 +14,9 @@ const locad = observable({
 
   concepts: {},
   fields: {},
+  concept_field_links: {},
   entries: {},
+  entry_field_values: {},
 
   apply(event) {
     runInAction(event.type, () => {
@@ -31,9 +33,7 @@ const locad = observable({
         case "CONCEPT_CREATED": {
           const concept = {
             id: event.id,
-            name: "",
-            field_ids: [],
-            entry_ids: []
+            name: ""
           };
           this.concepts[concept.id] = concept;
           break;
@@ -46,12 +46,24 @@ const locad = observable({
         }
 
         case "FIELD_CREATED": {
+          const { id, concept_id } = event;
           const field = {
-            id: event.id,
+            id,
             name: ""
           };
           locad.fields[field.id] = field;
-          locad.concepts[event.concept_id].field_ids.push(field.id);
+          const concept_field_link_id = [concept_id, field.id].join();
+          const entry_ids = get_entry_ids_of_concept(concept_id);
+          this.concept_field_links[concept_field_link_id] = {
+            id: concept_field_link_id,
+            concept_id,
+            field_id: id
+          };
+          for (const entry_id of entry_ids) {
+            const entry_field_value_id = get_entry_field_value_id(entry_id, id);
+            if (!(entry_field_value_id in this.entry_field_values))
+              this.entry_field_values[entry_field_value_id] = null;
+          }
           break;
         }
 
@@ -62,41 +74,30 @@ const locad = observable({
         }
 
         case "FIELD_DELETED": {
-          const field = this.fields[event.id];
-          for (const entry of Object.values(this.entries))
-            if (field.id in entry.fields) delete entry.fields[field.id];
-          for (const concept of Object.values(this.concepts))
-            if (concept.field_ids.includes(field.id))
-              concept.field_ids = concept.field_ids.filter(
-                id => id !== field.id
-              );
           delete this.fields[field.id];
           break;
         }
 
         case "ENTRY_CREATED": {
-          const entry = {
-            id: event.id,
-            fields: {}
-          };
+          const { id, field_ids } = event;
+          const entry = { id };
           this.entries[entry.id] = entry;
-          this.concepts[event.concept_id].entry_ids.push(entry.id);
+          for (const field_id of field_ids)
+            this.entry_field_values[
+              get_entry_field_value_id(id, field_id)
+            ] = null;
           break;
         }
 
-        case "ENTRY_FIELD_UPDATED": {
-          const entry = this.entries[event.entry_id];
-          entry.fields[event.field_id] = event.value;
+        case "ENTRY_FIELD_VALUE_UPDATED": {
+          const { entry_id, field_id } = event;
+          const id = get_entry_field_value_id(entry_id, field_id);
+          this.entry_field_values[id] = event.value;
           break;
         }
 
         case "ENTRY_DELETED": {
           const entry = this.entries[event.id];
-          for (const concept of Object.values(this.concepts))
-            if (concept.entry_ids.includes(entry.id))
-              concept.entry_ids = concept.entry_ids.filter(
-                id => id !== entry.id
-              );
           delete this.entries[entry.id];
           break;
         }
@@ -144,6 +145,7 @@ const locad = observable({
 
   create_field(id, concept_id) {
     if (id in this.fields) throw new Error("field id already exists");
+    if (!(concept_id in this.concepts)) throw new Error("unknown concept id");
     this.apply({
       type: "FIELD_CREATED",
       id,
@@ -168,13 +170,14 @@ const locad = observable({
     });
   },
 
-  create_entry(id, concept_id) {
+  create_entry(id, field_ids) {
     if (id in this.entries) throw new Error("entry id already exists");
-    if (!(concept_id in this.concepts)) throw new Error("unknown concept id");
+    for (const field_id of field_ids)
+      if (!(field_id in this.fields)) throw new Error("unknown field id");
     this.apply({
       type: "ENTRY_CREATED",
       id,
-      concept_id
+      field_ids
     });
   },
 
@@ -182,7 +185,7 @@ const locad = observable({
     if (!(entry_id in this.entries)) throw new Error("unknown entry id");
     if (!(field_id in this.fields)) throw new Error("unknown field id");
     this.apply({
-      type: "ENTRY_FIELD_UPDATED",
+      type: "ENTRY_FIELD_VALUE_UPDATED",
       entry_id,
       field_id,
       value
@@ -251,6 +254,33 @@ function new_entry_id() {
   return "entry:" + new_uuid();
 }
 
+function get_entry_field_value_id(entry_id, field_id) {
+  return [entry_id, field_id].join();
+}
+
+function get_field_ids_of_concept(concept_id) {
+  return Object.values(locad.concept_field_links)
+    .filter(link => link.concept_id === concept_id)
+    .map(link => link.field_id);
+}
+
+function get_entry_ids_with_fields(field_ids) {
+  return Object.keys(locad.entries).filter(
+    entry_id =>
+      !field_ids.find(
+        field_id =>
+          !(
+            get_entry_field_value_id(entry_id, field_id) in
+            locad.entry_field_values
+          )
+      )
+  );
+}
+
+function get_entry_ids_of_concept(concept_id) {
+  return get_entry_ids_with_fields(get_field_ids_of_concept(concept_id));
+}
+
 function save_or_cancel(event, original) {
   if (event.key === "Enter") event.target.blur();
   else if (event.key === "Escape") {
@@ -301,7 +331,7 @@ const Concepts = observer(
 
 const Concept = observer(({ id }) => {
   const concept = locad.concepts[id];
-  if (!concept) throw new Error("concept not found");
+  if (!concept) return null;
   function save_name(name) {
     if (name !== concept.name) locad.rename_concept(id, name);
   }
@@ -345,9 +375,9 @@ const Concept = observer(({ id }) => {
 });
 
 const Fields = observer(({ concept_id }) => {
-  const concept = locad.concepts[concept_id];
-  if (!concept) throw new Error("concept not found");
-  const fields = concept.field_ids.map(id => locad.fields[id]);
+  const fields = Object.values(locad.concept_field_links)
+    .filter(link => link.concept_id === concept_id)
+    .map(link => locad.fields[link.field_id]);
   function save_name(id, name) {
     if (name !== locad.fields[id].name) locad.rename_field(id, name);
   }
@@ -394,8 +424,8 @@ const Fields = observer(({ concept_id }) => {
       <button
         className="add small"
         onclick=${() => {
-          const id = new_field_id();
-          locad.create_field(id, concept.id);
+          const field_id = new_field_id();
+          locad.create_field(field_id, concept_id);
         }}
       >
         Add field
@@ -410,12 +440,12 @@ const view = observable({
 });
 
 const Entries = observer(({ concept_id }) => {
-  const concept = locad.concepts[concept_id];
-  if (!concept) throw new Error("concept not found");
+  const field_ids = get_field_ids_of_concept(concept_id);
+  const entry_ids = get_entry_ids_with_fields(field_ids);
   return html`
     <div>
       <h2>Entries</h2>
-      ${concept.entry_ids.length > 0 &&
+      ${entry_ids.length > 0 &&
         html`
           <div class="horizontal-scroll">
             <div class="small">
@@ -448,15 +478,15 @@ const Entries = observer(({ concept_id }) => {
             ${view.type === "table" &&
               html`
                 <${EntriesTable}
-                  entry_ids=${concept.entry_ids}
-                  field_ids=${concept.field_ids}
+                  entry_ids=${entry_ids}
+                  field_ids=${field_ids}
                 />
               `}
             ${view.type === "card" &&
               html`
                 <${EntriesCards}
-                  entry_ids=${concept.entry_ids}
-                  field_ids=${concept.field_ids}
+                  entry_ids=${entry_ids}
+                  field_ids=${field_ids}
                 />
               `}
           </div>
@@ -464,8 +494,8 @@ const Entries = observer(({ concept_id }) => {
       <button
         class="add small"
         onclick=${() => {
-          const id = new_entry_id();
-          locad.create_entry(id, concept.id);
+          const entry_id = new_entry_id();
+          locad.create_entry(entry_id, field_ids);
         }}
       >
         Add entry
@@ -502,7 +532,7 @@ const EntriesTable = observer(
                   field_id =>
                     html`
                       <td key=${field_id}>
-                        <${EntryFieldInput}
+                        <${EntryFieldValueInput}
                           entry_id=${entry_id}
                           field_id=${field_id}
                         />
@@ -538,7 +568,7 @@ const EntriesCards = observer(
                         ><small>
                           ${field.name}
                         </small>
-                        <${EntryFieldInput}
+                        <${EntryFieldValueInput}
                           entry_id=${entry_id}
                           field_id=${field.id}
                         />
@@ -552,18 +582,18 @@ const EntriesCards = observer(
   `
 );
 
-const EntryFieldInput = observer(({ entry_id, field_id }) => {
+const EntryFieldValueInput = observer(({ entry_id, field_id }) => {
   const entry = locad.entries[entry_id];
-  if (!entry) throw new Error("entry not found");
   const field = locad.fields[field_id];
-  if (!field) throw new Error("field not found");
-  function focus_entry_field(entry, field) {
-    view.focus = [entry.id, field.id].join();
+  if (!entry || !field) return null;
+  const entry_field_value_id = get_entry_field_value_id(entry_id, field_id);
+  function focus_entry_field() {
+    view.focus = entry_field_value_id;
   }
-  function format_entry_field_value(entry, field) {
-    const value = entry.fields[field.id];
-    if (typeof value === "undefined") return;
-    const isFocused = [entry.id, field.id].join() === view.focus;
+  function format_entry_field_value() {
+    const value = locad.entry_field_values[entry_field_value_id];
+    if (value == null) return;
+    const isFocused = entry_field_value_id === view.focus;
     if (isFocused) return value;
     const currency = (value.match(/^([A-Z]{3})\s*/) ||
       value.match(/\s*([A-Z]{3})$/) ||
@@ -600,19 +630,17 @@ const EntryFieldInput = observer(({ entry_id, field_id }) => {
       return number.toLocaleString();
     return value;
   }
-  function save_entry_field_value(entry, field, value) {
-    if (value !== entry.fields[field.id])
+  function save_entry_field_value(value) {
+    if (value !== locad.entry_field_values[entry_field_value_id])
       locad.update_entry_field_value(entry.id, field.id, value);
     view.focus = null;
   }
   return html`
     <input
-      onkeydown=${event =>
-        save_or_cancel(event, format_entry_field_value(entry, field))}
-      onfocus=${() => focus_entry_field(entry, field)}
-      onblur=${event =>
-        save_entry_field_value(entry, field, event.target.value.trim())}
-      value=${format_entry_field_value(entry, field)}
+      onkeydown=${event => save_or_cancel(event, format_entry_field_value())}
+      onfocus=${focus_entry_field}
+      onblur=${event => save_entry_field_value(event.target.value.trim())}
+      value=${format_entry_field_value()}
     />
   `;
 });
