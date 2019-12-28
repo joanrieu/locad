@@ -1,30 +1,108 @@
+<table>
+    <thead>
+        <tr>
+            <th><span>#</span></th>
+            {#each fields as field}
+            <th>
+                <input
+                    type="text"
+                    bind:value="{field.name}"
+                    placeholder="&hellip;"
+                />
+            </th>
+            {/each}
+            <th><button on:click="{addField}">+</button></th>
+        </tr>
+    </thead>
+    <tbody>
+        {#each items as item, i}
+        <tr>
+            <td><span>{i+1}</span></td>
+            {#each fields as field}
+            <td>
+                <input
+                    type="text"
+                    bind:value="{item[field.id]}"
+                    placeholder="&hellip;"
+                />
+            </td>
+            {/each}
+        </tr>
+        {/each}
+        <tr>
+            <td colspan="{fields.length+1}" style="text-align: center;">
+                <button on:click="{addItem}">+</button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
 <script>
-	export let name;
+    let fields = [
+        // { id: "name", name: "Name" }
+        // { id: "description", name: "Description" }
+    ];
+    let items = [
+        // {
+        //     name: "hello",
+        //     description: "world"
+        // },
+        // {
+        //     name: "foo",
+        //     description: "bar"
+        // },
+        // {
+        //     name: "toto",
+        //     description: "tata"
+        // }
+    ];
+
+    function addField() {
+        fields = [
+            ...fields,
+            {
+                id:
+                    "field:" +
+                    Math.random()
+                        .toString(16)
+                        .slice(2),
+                name: ""
+            }
+        ];
+    }
+
+    function addItem() {
+        items = [...items, { name: "" }];
+    }
 </script>
 
-<main>
-	<h1>Hello {name}!</h1>
-	<p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
-</main>
-
 <style>
-	main {
-		text-align: center;
-		padding: 1em;
-		max-width: 240px;
-		margin: 0 auto;
-	}
+    table {
+        border-spacing: 0;
+    }
 
-	h1 {
-		color: #ff3e00;
-		text-transform: uppercase;
-		font-size: 4em;
-		font-weight: 100;
-	}
+    th {
+        border-bottom: 1px solid lightgrey;
+    }
 
-	@media (min-width: 640px) {
-		main {
-			max-width: none;
-		}
-	}
+    tr:first-child td {
+        padding-top: 0.5em;
+    }
+
+    span {
+        color: lightgrey;
+    }
+
+    span,
+    input {
+        font: inherit;
+        border: none;
+        margin: 0.1em 0.2em;
+        padding: 0.4em 0.8em;
+        display: block;
+    }
+
+    button {
+        padding: 0.2em 0.8em;
+    }
 </style>
